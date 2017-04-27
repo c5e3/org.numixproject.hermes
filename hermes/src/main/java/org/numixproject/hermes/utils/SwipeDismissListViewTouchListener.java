@@ -123,10 +123,8 @@ public class SwipeDismissListViewTouchListener implements View.OnTouchListener {
 
     /**
      * Constructs a new swipe-to-dismiss touch listener for the given list view.
-     *
-     * @param listView  The list view whose items should be dismissable.
+     *  @param listView  The list view whose items should be dismissable.
      * @param callbacks The callback to trigger when the user has indicated that she would like to
-     *                  dismiss one or more list items.
      */
     public SwipeDismissListViewTouchListener(ListView listView, DismissCallbacks callbacks) {
         ViewConfiguration vc = ViewConfiguration.get(listView.getContext());

@@ -53,7 +53,6 @@ import org.numixproject.hermes.receiver.ConversationReceiver;
 import org.numixproject.hermes.receiver.ServerReceiver;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -63,16 +62,13 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.media.Image;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Parcelable;
 import android.speech.RecognizerIntent;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -82,7 +78,6 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.TextKeyListener;
 import android.util.Log;
@@ -103,10 +98,6 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.Transformation;
-import android.view.inputmethod.CorrectionInfo;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -114,7 +105,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -122,9 +112,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import org.numixproject.hermes.utils.SwipeDismissListViewTouchListener;
 import org.numixproject.hermes.utils.TinyDB;
-import org.numixproject.hermes.utils.iap;
 
-import com.anjlab.android.iab.v3.BillingProcessor;
 import com.facebook.FacebookSdk;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
@@ -183,8 +171,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
     private String recentToDelete;
     SwipeRefreshLayout swipeRefresh;
     InterstitialAd mInterstitialAd;
-    iap inAppPayments;
-    BillingProcessor bp;
 
     private final OnKeyListener inputKeyListener = new OnKeyListener() {
         /**
@@ -275,27 +261,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
         // Finish activity if server does not exist anymore - See #55
         if (server == null) {
             this.finish();
-        }
-
-        String key = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5B4Oomgmm2D8XVSxh1DIFGtU3p1N2w6Xi2ZO7MoeZRAhvVjk3B8MfrOatlO9HfozRGhEkCkq0MfstB4Cjci3dsnYZieNmHOVYIFBWERqdwfdtnUIfI554xFsAC3Ah7PTP3MwKE7qTT1VLTTHxxsE7GH4sLtvLwrAzsVrLK+dgQk+e9bDJMvhhEPBgabRFaTvKaTtSzB/BBwrCa5mv0pte6WfrNbugFjiAJC43b7NNY2PV9UA8mukiBNZ9mPrK5fZeSEfcVqenyqbvZZG+P+O/cohAHbIEzPMuAS1EBf0VBsZtm3fjQ45PgCvEB7Ye3ucfR9BQ9ADjDwdqivExvXndQIDAQAB";
-
-        inAppPayments = new iap();
-
-        bp = inAppPayments.getBilling(this, key);
-        bp.loadOwnedPurchasesFromGoogle();
-
-        // Load AdMob Ads
-        if (!inAppPayments.isPurchased()) {
-            mInterstitialAd = new InterstitialAd(this);
-            mInterstitialAd.setAdUnitId("ca-app-pub-2834532364021285/7438037454");
-            requestNewInterstitial();
-
-            mInterstitialAd.setAdListener(new AdListener() {
-                @Override
-                public void onAdClosed() {
-                    requestNewInterstitial();
-                }
-            });
         }
 
         try {
@@ -448,9 +413,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
                                     roomAdapter.remove(position);
                                 }
                                 roomAdapter.notifyDataSetChanged();
-                                if (Math.random() * 100 < 30) {
-                                    showAd();
-                                }
                             }
                         });
         roomsList.setOnTouchListener(touchListener);
@@ -616,9 +578,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
                                     saveRecentItems();
                                 }
                                 recentAdapter.notifyDataSetChanged();
-                                if (Math.random() * 100 < 10) {
-                                    showAd();
-                                }
                             }
                         });
         recentView.setOnTouchListener(touchListenerRecent);
@@ -730,11 +689,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
     @Override
     public void onDestroy()
     {
-        super.onDestroy();
-        if (bp != null) {
-            bp.release();
-        }
-
         int counter;
         for (counter=0; counter < RoomsList.size(); counter++) {
             lastRooms.add(RoomsList.get(counter));
@@ -1059,9 +1013,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
                 server.clearConversations();
                 setResult(RESULT_OK);
                 invalidateOptionsMenu();
-                if (Math.random() * 100 < 80) {
-                    showAd();
-                }
                 break;
 
             case R.id.close:
@@ -1069,16 +1020,10 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
                 // Make sure we part a channel when closing the channel conversation
                 if (conversationToClose.getType() == Conversation.TYPE_CHANNEL) {
                     binder.getService().getConnection(serverId).partChannel(conversationToClose.getName());
-                    if (Math.random() * 100 < 50) {
-                        showAd();
-                    }
                 }
                 else if (conversationToClose.getType() == Conversation.TYPE_QUERY) {
                     server.removeConversation(conversationToClose.getName());
                     onRemoveConversation(conversationToClose.getName());
-                    if (Math.random() * 100 < 50) {
-                        showAd();
-                    }
                 } else {
                     Toast.makeText(this, getResources().getString(R.string.close_server_window), Toast.LENGTH_SHORT).show();
                 }
@@ -1652,33 +1597,6 @@ public class ConversationActivity extends AppCompatActivity implements ServiceCo
 
     private void loadLastItems(){
         lastRooms = tinydb.getListString(server.getTitle()+"last");
-    }
-
-    private void showAd() {
-        SharedPreferences sp = getSharedPreferences("preference name", MODE_PRIVATE);
-
-        if (!inAppPayments.isPurchased()) {
-            if (mInterstitialAd.isLoaded()) {
-                if (sp.getInt("key", 0) < 2) {
-                    SharedPreferences.Editor ed = sp.edit();
-                    ed.putInt("key", sp.getInt("key", 0) + 1);
-                    ed.commit();
-                    mInterstitialAd.show();
-                }
-            }
-        }
-    }
-
-    private void requestNewInterstitial() {
-        if (!inAppPayments.isPurchased()) {
-
-            AdRequest adRequest = new AdRequest.Builder()
-                    .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-                    .addTestDevice("E9C24D5A0EFC9044146D4ECAFD56B53B")
-                    .build();
-
-            mInterstitialAd.loadAd(adRequest);
-        }
     }
 
     // Show Snackbars
